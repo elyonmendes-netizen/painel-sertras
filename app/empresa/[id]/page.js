@@ -58,8 +58,7 @@ export default async function Empresa({ params }) {
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <Selo k="pendente" n={emp.pendente} />
                 <Selo k="correcao" n={emp.correcao} rotulo="Correção" />
-                <Selo k="analise" n={emp.analise} rotulo="Em análise" />
-                <Selo k="aprovado" n={emp.aprovado} rotulo="Aprovados" />
+                <Selo k="aprovado" n={emp.aprovado} rotulo="Resolvidos" />
               </div>
             </div>
 
@@ -95,7 +94,7 @@ export default async function Empresa({ params }) {
                     return (
                       <div className="lin-simples" key={x.id}>
                         <span>{x.documento}{x.competencia && x.competencia !== '--' ? ` · ${x.competencia}` : ''}</span>
-                        <span className="etq" style={{ background: s.fundo, color: s.texto }}>{x.situacao === 'aprovado' ? 'Aprovado' : s.rotulo}</span>
+                        <span className="etq" style={{ background: s.fundo, color: s.texto }}>{s.rotulo}</span>
                       </div>
                     );
                   })}

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Coletor de Pendências Sertras
 // @namespace    painel-sertras
-// @version      1.0
+// @version      1.1
 // @description  Uma vez por dia lê as pendências de todos os contratos do Sertras e envia para o Painel de Pendências.
 // @match        https://gestaodeterceiros.sertras.com/escolha-um-contrato*
 // @grant        GM_xmlhttpRequest
@@ -21,7 +21,7 @@
   // ===============================================================================
 
   const W = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; // janela da página (Alpine, BASEURL)
-  const STATUS = '0,5,4,6'; // Pendente, Pendente Correção, Pendente Sertras, Pendente Sertras Correção
+  const STATUS = '0,5'; // só Pendente e Pendente Correção
   const RELATORIOS = {
     'recurso-acompanhar-documentos-pessoas': 'Mensal Pessoas',
     'recurso-acompanhar-documentos-empresas': 'Mensal Empresa',
@@ -135,7 +135,7 @@
       mostra('Enviando para o painel…', 'rodando');
       const r = await enviar({ itens, erros, contratosLidos: lidos });
       GM_setValue('ultimaColeta', hoje());
-      mostra(`Coleta de hoje concluída: ${r.itens} itens, ${r.aprovados} aprovados.${erros.length ? '<br>Avisos: ' + erros.length : ''}<br>Agora escolha o contrato em que vai trabalhar.`, 'ok');
+      mostra(`Coleta de hoje concluída: ${r.itens} pendências, ${r.aprovados} resolvidas.${erros.length ? '<br>Avisos: ' + erros.length : ''}<br>Agora escolha o contrato em que vai trabalhar.`, 'ok');
     } catch (e) {
       mostra('Erro na coleta: ' + e.message, 'erro');
     } finally {

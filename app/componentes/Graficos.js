@@ -3,13 +3,13 @@ import { SITUACOES } from '@/lib/status';
 
 const pct = (v, max) => (max > 0 ? (v / max) * 100 : 0) + '%';
 
-export function Legenda({ com = ['pendente', 'correcao', 'analise', 'aprovado'] }) {
+export function Legenda({ com = ['pendente', 'correcao', 'aprovado'] }) {
   return (
     <div className="legenda">
       {com.map((k) => (
         <span key={k}>
           <span className="quad" style={{ background: SITUACOES[k].cor }} />
-          {k === 'aprovado' ? 'Aprovados' : SITUACOES[k].rotulo}
+          {k === 'aprovado' ? 'Resolvidos' : SITUACOES[k].rotulo}
         </span>
       ))}
     </div>
@@ -18,9 +18,9 @@ export function Legenda({ com = ['pendente', 'correcao', 'analise', 'aprovado'] 
 
 export function GraficoEvolucao({ historico }) {
   if (!historico?.length) return null;
-  const max = Math.max(1, ...historico.map((d) => d.pendente + d.correcao + d.analise));
+  const max = Math.max(1, ...historico.map((d) => d.pendente + d.correcao));
   const maxAp = Math.max(1, ...historico.map((d) => d.aprovado));
-  const resumo = historico.map((d) => `${d.dia}: ${d.pendente + d.correcao} em aberto, ${d.aprovado} aprovados`).join('; ');
+  const resumo = historico.map((d) => `${d.dia}: ${d.pendente + d.correcao} em aberto, ${d.aprovado} resolvidos`).join('; ');
   return (
     <section className="cartao">
       <div className="cab-secao">
@@ -29,10 +29,9 @@ export function GraficoEvolucao({ historico }) {
       </div>
       <div className="grafico" role="img" aria-label={resumo}>
         {historico.map((d) => (
-          <div className="dia" key={d.dia} title={`${d.dia} — Pendente ${d.pendente} · Correção ${d.correcao} · Em análise ${d.analise} · Aprovados ${d.aprovado}`}>
+          <div className="dia" key={d.dia} title={`${d.dia} — Pendente ${d.pendente} · Correção ${d.correcao} · Resolvidos ${d.aprovado}`}>
             <div className="pilha">
-              <span style={{ height: pct(d.analise, max), background: SITUACOES.analise.cor, borderRadius: '3px 3px 0 0' }} />
-              <span style={{ height: pct(d.correcao, max), background: SITUACOES.correcao.cor }} />
+              <span style={{ height: pct(d.correcao, max), background: SITUACOES.correcao.cor, borderRadius: '3px 3px 0 0' }} />
               <span style={{ height: pct(d.pendente, max), background: SITUACOES.pendente.cor }} />
             </div>
             <span style={{ flex: 1, height: `calc(${pct(d.aprovado, maxAp)} * 0.6)`, background: SITUACOES.aprovado.cor, borderRadius: '3px 3px 0 0' }} />
@@ -44,19 +43,19 @@ export function GraficoEvolucao({ historico }) {
           <span key={d.dia}>{d.dia}</span>
         ))}
       </div>
-      <p className="nota">Barra da esquerda: tudo que está na lista em cada dia. Barra verde: aprovados naquele dia (escala própria).</p>
+      <p className="nota">Barra da esquerda: pendências em aberto em cada dia. Barra verde: itens que saíram da lista naquele dia (enviados ou aprovados; escala própria).</p>
     </section>
   );
 }
 
 export function BarrasEmpresas({ empresas }) {
-  const lista = empresas.filter((e) => e.aberto + e.analise + e.aprovado > 0);
-  const max = Math.max(1, ...lista.map((e) => e.aberto + e.analise));
+  const lista = empresas.filter((e) => e.aberto + e.aprovado > 0);
+  const max = Math.max(1, ...lista.map((e) => e.aberto));
   return (
     <section className="cartao col-larga">
       <div className="cab-secao">
         <h2>Pendências por empresa</h2>
-        <Legenda com={['pendente', 'correcao', 'analise']} />
+        <Legenda com={['pendente', 'correcao']} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 16 }}>
         {lista.length === 0 && <p className="cinza">Nenhuma pendência.</p>}
@@ -68,13 +67,12 @@ export function BarrasEmpresas({ empresas }) {
             <span className="barra">
               <span style={{ width: pct(e.pendente, max), background: SITUACOES.pendente.cor }} />
               <span style={{ width: pct(e.correcao, max), background: SITUACOES.correcao.cor }} />
-              <span style={{ width: pct(e.analise, max), background: SITUACOES.analise.cor }} />
             </span>
             <span className="barra-total">{e.aberto}</span>
           </Link>
         ))}
       </div>
-      <p className="nota">O número à direita conta só o que depende da empresa (Pendente + Correção). Clique para ver o detalhe.</p>
+      <p className="nota">Clique numa empresa para ver o detalhe.</p>
     </section>
   );
 }

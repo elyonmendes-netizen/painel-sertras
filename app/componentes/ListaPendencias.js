@@ -33,8 +33,7 @@ export default function ListaPendencias({ linhas, linkExportar, mostrarEmpresa =
             <option value="todos">Todas as situações</option>
             <option value="pendente">Pendente</option>
             <option value="correcao">Pendente Correção</option>
-            <option value="analise">Em análise Sertras</option>
-            <option value="aprovado">Aprovados</option>
+            <option value="aprovado">Resolvidos (saíram da lista)</option>
           </select>
           <select className="campo" value={relatorio} onChange={(e) => setRelatorio(e.target.value)} aria-label="Relatório">
             <option value="">Todos os relatórios</option>
