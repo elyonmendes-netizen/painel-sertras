@@ -70,3 +70,9 @@ drop policy if exists "leitura logado" on public.aprovados;
 create policy "leitura logado" on public.leituras  for select to authenticated using (true);
 create policy "leitura logado" on public.itens     for select to authenticated using (true);
 create policy "leitura logado" on public.aprovados for select to authenticated using (true);
+
+-- 5) Permissões da API (projetos novos do Supabase não liberam sozinhos)
+grant usage on schema public to authenticated, service_role;
+grant select on public.leituras, public.itens, public.aprovados to authenticated;
+grant all on public.leituras, public.itens, public.aprovados to service_role;
+grant usage, select on all sequences in schema public to service_role;
