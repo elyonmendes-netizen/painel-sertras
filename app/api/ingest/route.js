@@ -30,9 +30,7 @@ export async function POST(request) {
   } catch {
     return NextResponse.json({ ok: false, erro: 'JSON inválido' }, { status: 400, headers: CORS });
   }
-  // Só interessa o que depende das empresas: Pendente e Pendente Correção.
-  // "Pendente Sertras" (já enviado, aguardando análise) é descartado.
-  const recebidos = (Array.isArray(corpo.itens) ? corpo.itens : []).filter((i) => !/sertras/i.test(i?.status || ''));
+  const recebidos = Array.isArray(corpo.itens) ? corpo.itens : [];
   const erros = Array.isArray(corpo.erros) ? corpo.erros.map(txt) : [];
   const lidos = Array.isArray(corpo.contratosLidos) ? corpo.contratosLidos.map(String) : [];
   if (recebidos.length > 20000) {
@@ -93,7 +91,7 @@ export async function POST(request) {
     }
   }
 
-  // Saíram da lista = aprovados (só conta contratos que foram lidos com sucesso agora)
+  // Saíram da lista = aprovados pelo Sertras (só conta contratos lidos por completo agora)
   const chavesNovas = new Set(itens.map((i) => i.chave));
   const aprovados = antigos
     .filter((a) => !chavesNovas.has(a.chave) && lidosSet.has(String(a.contrato_id)))

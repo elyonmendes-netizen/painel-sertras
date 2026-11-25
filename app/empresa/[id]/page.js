@@ -31,7 +31,7 @@ export default async function Empresa({ params }) {
       if (!l.pessoa) continue;
       const p = pessoas.get(l.pessoa) || { nome: l.pessoa, funcao: l.funcao, docs: [], aberto: 0 };
       p.docs.push(l);
-      if (l.situacao === 'pendente' || l.situacao === 'correcao') p.aberto++;
+      if (l.situacao !== 'aprovado') p.aberto++;
       pessoas.set(l.pessoa, p);
     }
   }
@@ -57,8 +57,9 @@ export default async function Empresa({ params }) {
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <Selo k="pendente" n={emp.pendente} />
-                <Selo k="correcao" n={emp.correcao} rotulo="Correção" />
-                <Selo k="aprovado" n={emp.aprovado} rotulo="Resolvidos" />
+                <Selo k="analise" n={emp.analise} />
+                <Selo k="correcao" n={emp.correcao} />
+                <Selo k="aprovado" n={emp.aprovado} rotulo="Aprovados" />
               </div>
             </div>
 
@@ -70,7 +71,7 @@ export default async function Empresa({ params }) {
                   <div key={p.nome} style={{ borderTop: '1px solid #F3F4F6', padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 14, flexWrap: 'wrap' }}>
                       <span><b>{p.nome}</b> {p.funcao && <span className="cinza">· {p.funcao}</span>}</span>
-                      <span className="cinza">{p.aberto} em aberto</span>
+                      <span className="cinza">{p.aberto} na lista</span>
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {p.docs.map((x) => {

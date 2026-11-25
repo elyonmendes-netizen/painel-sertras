@@ -52,7 +52,7 @@ export default async function Painel({ searchParams }) {
         <div className="linha-titulo">
           <div>
             <h1 className="titulo" style={{ fontSize: 28 }}>{grupo ? `Contrato ${grupo}` : 'Visão geral'}</h1>
-            <p className="sub">Documentos com status Pendente ou Pendente Correção no Sertras (recursos ativos).</p>
+            <p className="sub">Documentos de recursos ativos que ainda não foram aprovados no Sertras.</p>
           </div>
           <nav className="abas" aria-label="Contrato">
             <Link href="/" className={'aba' + (!grupo ? ' ativa' : '')}>Todos os contratos</Link>
@@ -64,14 +64,15 @@ export default async function Painel({ searchParams }) {
 
         <div className="kpis">
           <Kpi
-            rotulo="Total em aberto"
+            rotulo="Total na lista"
             valor={d.aberto}
             obs={d.delta == null ? 'primeira leitura' : d.delta === 0 ? 'igual a ontem' : `${d.delta > 0 ? '+' : ''}${d.delta} desde a leitura anterior`}
             corObs={d.delta > 0 ? '#B45309' : d.delta < 0 ? '#047857' : undefined}
           />
-          <Kpi rotulo="Pendente (não enviado)" valor={d.cont.pendente} cor={SITUACOES.pendente.texto} obs={`${pct(d.cont.pendente)}% da lista`} />
-          <Kpi rotulo="Pendente Correção (reprovado)" valor={d.cont.correcao} cor={SITUACOES.correcao.cor} obs="precisam de reenvio" />
-          <Kpi rotulo="Resolvidos desde a leitura anterior" valor={d.cont.aprovado} cor={SITUACOES.aprovado.cor} obs="enviados ou aprovados: saíram da lista" corObs={SITUACOES.aprovado.cor} />
+          <Kpi rotulo="Pendente" valor={d.cont.pendente} cor={SITUACOES.pendente.texto} obs={`documento não anexado · ${pct(d.cont.pendente)}%`} />
+          <Kpi rotulo="Pendente Sertras" valor={d.cont.analise} cor={SITUACOES.analise.cor} obs={`anexado, aguardando análise · ${pct(d.cont.analise)}%`} />
+          <Kpi rotulo="Pendente Correção" valor={d.cont.correcao} cor={SITUACOES.correcao.cor} obs={`anexado, precisa de correção · ${pct(d.cont.correcao)}%`} />
+          <Kpi rotulo="Aprovados desde a leitura anterior" valor={d.cont.aprovado} cor={SITUACOES.aprovado.cor} obs="aprovados pelo Sertras: saíram da lista" corObs={SITUACOES.aprovado.cor} />
         </div>
 
         <GraficoEvolucao historico={d.historico} />
@@ -98,7 +99,7 @@ export default async function Painel({ searchParams }) {
                 {d.aberto > 0 && d.empresas.length > 3 && (
                   <li>As 3 empresas com mais pendências somam {Math.round((top3 / d.aberto) * 100)}% do que está em aberto</li>
                 )}
-                <li>Correções paradas há mais de 7 dias: {d.paradas}</li>
+                <li>Pendente Correção há mais de 7 dias: {d.paradas}</li>
                 {(d.atual.erros || []).length > 0 && <li>A última leitura teve {d.atual.erros.length} aviso(s): {d.atual.erros.slice(0, 3).join('; ')}</li>}
               </ul>
             </section>
