@@ -4,7 +4,7 @@ Site com login próprio para acompanhar as pendências do Sertras de todos os co
 
 **Como funciona:**
 
-1. **Coletor (Tampermonkey, no seu Chrome):** uma vez por dia, quando a página "Escolha um contrato" do Sertras abre, ele lê os 4 relatórios (Mensal Pessoas, Mensal Empresa, Integração Pessoas e Integração Empresa) de todos os contratos ativos e envia os dados para o painel. Leva uns 3 minutos.
+1. **Coletor (Tampermonkey, no seu Chrome):** uma vez por dia, quando a página "Escolha um contrato" do Sertras abre, ele lê os 4 relatórios (Mensal Pessoas, Mensal Empresa, Integração Pessoas e Integração Empresa) de todos os contratos ativos e envia os dados para o painel. Leva cerca de 1 minuto.
 2. **Banco (Supabase):** guarda cada leitura diária. Um item que estava na lista e sumiu na leitura seguinte é registrado como **Aprovado** (verde).
 3. **Site (Vercel):** as telas do painel. Só entra quem você cadastrar.
 
@@ -65,16 +65,12 @@ O código já está no repositório `painel-sertras` da sua conta do GitHub. Se 
 ## PASSO 4: Instalar o coletor no Chrome (5 min)
 
 1. Instale a extensão **Tampermonkey** pela Chrome Web Store: https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo
-2. No Chrome, abra o menu ⋮ > **Extensões** > **Gerenciar extensões** e ligue o **Modo do desenvolvedor**, no canto superior direito. O Tampermonkey exige isso para rodar scripts.
-3. Clique no ícone do Tampermonkey (quebra-cabeça > Tampermonkey) > **Criar um novo script**.
-4. Apague tudo o que aparecer e cole **todo** o conteúdo do arquivo `coletor/coletor-sertras.user.js`.
-5. No começo do script, troque as 2 linhas de configuração:
-   - `ENDERECO_PAINEL` já vem preenchido com https://painel-sertras.vercel.app
-   - `INGEST_TOKEN` = o mesmo código do passo 3.2 (NUNCA salve o token aqui no GitHub)
-6. Aperte **Ctrl+S** para salvar.
-7. Abra https://gestaodeterceiros.sertras.com/escolha-um-contrato já logado. Uma caixinha escura aparece no canto inferior direito, mostrando "Lendo 1 de 27…".
-8. Espere a mensagem "Coleta de hoje concluída". Na primeira vez, o Tampermonkey pode perguntar se o script pode acessar o endereço do painel: clique em **Sempre permitir**.
-9. Atualize o painel no Vercel. Os dados de hoje já devem aparecer.
+2. Abra `chrome://extensions`, clique em **Detalhes** no Tampermonkey e ligue **Permitir scripts do usuário**.
+3. Abra este endereço e clique em **Instalar**:
+   https://raw.githubusercontent.com/elyonmendes-netizen/painel-sertras/main/coletor/coletor-sertras.user.js
+4. Abra https://gestaodeterceiros.sertras.com/escolha-um-contrato já logado. Na primeira vez, aparece uma janela pedindo o **INGEST_TOKEN**: cole o mesmo código do passo 3.2 e clique em OK. Ele fica guardado no Tampermonkey e não precisa ser colado de novo.
+5. Uma caixinha escura aparece no canto inferior direito ("Lendo 1 de 26…"). A leitura leva cerca de 1 minuto. Espere a mensagem "Coleta de hoje concluída".
+6. As atualizações do script chegam sozinhas pelo Tampermonkey. Para trocar o token, use o link **trocar token** na caixinha.
 
 **Importante:** enquanto a caixinha mostrar "Lendo…", não use o Sertras em outra aba. O coletor troca o contrato ativo da sua sessão, e um envio seu poderia cair no contrato errado. Quando terminar, escolha normalmente o contrato em que vai trabalhar.
 
