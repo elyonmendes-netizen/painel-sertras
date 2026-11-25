@@ -69,8 +69,8 @@ O código já está no repositório `painel-sertras` da sua conta do GitHub. Se 
 3. Clique no ícone do Tampermonkey (quebra-cabeça > Tampermonkey) > **Criar um novo script**.
 4. Apague tudo o que aparecer e cole **todo** o conteúdo do arquivo `coletor/coletor-sertras.user.js`.
 5. No começo do script, troque as 2 linhas de configuração:
-   - `ENDERECO_PAINEL` = o endereço do passo 3.4, sem barra no final
-   - `INGEST_TOKEN` = o mesmo código que você inventou no passo 3.2
+   - `ENDERECO_PAINEL` já vem preenchido com https://painel-sertras.vercel.app
+   - `INGEST_TOKEN` = o mesmo código do passo 3.2 (NUNCA salve o token aqui no GitHub)
 6. Aperte **Ctrl+S** para salvar.
 7. Abra https://gestaodeterceiros.sertras.com/escolha-um-contrato já logado. Uma caixinha escura aparece no canto inferior direito, mostrando "Lendo 1 de 27…".
 8. Espere a mensagem "Coleta de hoje concluída". Na primeira vez, o Tampermonkey pode perguntar se o script pode acessar o endereço do painel: clique em **Sempre permitir**.

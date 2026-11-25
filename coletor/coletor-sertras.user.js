@@ -8,8 +8,7 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        unsafeWindow
-// @connect      vercel.app
-// @connect      *
+// @connect      painel-sertras.vercel.app
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -17,7 +16,7 @@
   'use strict';
 
   // ===================== CONFIGURAÇÃO (preencha as 2 linhas) =====================
-  const ENDERECO_PAINEL = 'https://SEU-PAINEL.vercel.app'; // sem barra no final
+  const ENDERECO_PAINEL = 'https://painel-sertras.vercel.app'; // sem barra no final
   const INGEST_TOKEN = 'COLE-AQUI-O-MESMO-INGEST_TOKEN-DO-VERCEL';
   // ===============================================================================
 
@@ -82,8 +81,8 @@
     rodando = true;
     botao.disabled = true;
     try {
-      if (ENDERECO_PAINEL.includes('SEU-PAINEL') || INGEST_TOKEN.startsWith('COLE-AQUI')) {
-        throw new Error('preencha ENDERECO_PAINEL e INGEST_TOKEN no início do script');
+      if (INGEST_TOKEN.startsWith('COLE-AQUI')) {
+        throw new Error('cole o INGEST_TOKEN no início do script (Tampermonkey > editar)');
       }
       const BASE = W.BASEURL || location.origin + '/';
       const lista = listaDeContratos().filter((c) => c.ativo);
