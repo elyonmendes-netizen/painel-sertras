@@ -2,21 +2,50 @@
 import { useMemo, useState } from 'react';
 import { SITUACOES, RELATORIOS } from '@/lib/status';
 
-export default function ListaPendencias({ linhas, linkExportar, mostrarEmpresa = true }) {
+// Gera o arquivo do Excel (.csv com ; e acentos) com exatamente o que está filtrado na tela
+function baixarExcel(linhas) {
+  const esc = (v) => {
+    const t = v == null ? '' : String(v);
+    return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  };
+  const cab = ['Contrato', 'Empresa', 'Colaborador', 'Função', 'Documento', 'Competência', 'Relatório', 'Status Sertras', 'Situação'];
+  const corpo = linhas.map((l) => [l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia, l.relatorio, l.status, l.detalhe].map(esc).join(';'));
+  const blob = new Blob(['\uFEFF' + [cab.join(';'), ...corpo].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `pendencias-sertras-${hoje}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
   const [busca, setBusca] = useState('');
+  const [empresa, setEmpresa] = useState('');
   const [situacao, setSituacao] = useState('todos');
   const [relatorio, setRelatorio] = useState('');
   const [limite, setLimite] = useState(100);
 
+  // Empresas que aparecem na lista, em ordem de contrato
+  const empresas = useMemo(() => {
+    const m = new Map();
+    for (const l of linhas) if (!m.has(l.contrato_id)) m.set(l.contrato_id, { id: l.contrato_id, contrato: l.contrato, empresa: l.empresa, n: 0 });
+    for (const l of linhas) m.get(l.contrato_id).n++;
+    return [...m.values()].sort((a, b) => a.contrato.localeCompare(b.contrato, 'pt-BR', { numeric: true }));
+  }, [linhas]);
+  const empresaValida = empresa && empresas.some((e) => String(e.id) === empresa) ? empresa : '';
+
   const filtradas = useMemo(() => {
     const b = busca.trim().toLowerCase();
     return linhas.filter((l) => {
+      if (empresaValida && String(l.contrato_id) !== empresaValida) return false;
       if (situacao !== 'todos' && l.situacao !== situacao) return false;
       if (relatorio && l.relatorio !== relatorio) return false;
       if (b && ![l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia].some((x) => (x || '').toLowerCase().includes(b))) return false;
       return true;
     });
-  }, [linhas, busca, situacao, relatorio]);
+  }, [linhas, busca, empresaValida, situacao, relatorio]);
 
   return (
     <section className="cartao">
@@ -27,6 +56,16 @@ export default function ListaPendencias({ linhas, linkExportar, mostrarEmpresa =
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
             <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome, documento ou SUB" aria-label="Buscar" />
           </label>
+          {mostrarEmpresa && (
+            <select className="campo" value={empresaValida} onChange={(e) => { setEmpresa(e.target.value); setLimite(100); }} aria-label="Empresa" style={{ maxWidth: 320 }}>
+              <option value="">Todas as empresas</option>
+              {empresas.map((e) => (
+                <option key={e.id} value={String(e.id)}>
+                  {e.contrato.replace(/ - \d{3}\/\d{4}-RIO.*/, '')} · {e.empresa} ({e.n})
+                </option>
+              ))}
+            </select>
+          )}
           <select className="campo" value={situacao} onChange={(e) => setSituacao(e.target.value)} aria-label="Situação">
             <option value="todos">Todas as situações</option>
             <option value="pendente">Pendente (não anexado)</option>
@@ -40,7 +79,7 @@ export default function ListaPendencias({ linhas, linkExportar, mostrarEmpresa =
               <option key={r}>{r}</option>
             ))}
           </select>
-          <a className="botao" href={linkExportar}>Baixar Excel</a>
+          <button type="button" className="botao" onClick={() => baixarExcel(filtradas)} disabled={filtradas.length === 0}>Baixar Excel</button>
         </div>
       </div>
       <div className="tabela-caixa">

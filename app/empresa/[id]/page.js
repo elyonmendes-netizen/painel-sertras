@@ -103,7 +103,7 @@ export default async function Empresa({ params }) {
               </div>
             </div>
 
-            <ListaPendencias linhas={d.linhas} linkExportar={`/exportar?empresa=${encodeURIComponent(id)}`} mostrarEmpresa={false} />
+            <ListaPendencias linhas={d.linhas} mostrarEmpresa={false} />
           </>
         )}
       </main>

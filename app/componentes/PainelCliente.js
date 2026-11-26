@@ -28,7 +28,6 @@ export default function PainelCliente({ bruto, grupoInicial }) {
 
   const pct = (n) => (d.aberto > 0 ? Math.round((n / d.aberto) * 100) : 0);
   const top3 = d.empresas.slice(0, 3).reduce((s, e) => s + e.aberto, 0);
-  const qs = grupo ? `?contrato=${encodeURIComponent(grupo)}` : '';
 
   return (
     <main className="conteudo">
@@ -93,7 +92,7 @@ export default function PainelCliente({ bruto, grupoInicial }) {
         </div>
       </div>
 
-      <ListaPendencias key={grupo || 'todos'} linhas={d.linhas} linkExportar={`/exportar${qs}`} />
+      <ListaPendencias key={grupo || 'todos'} linhas={d.linhas} />
     </main>
   );
 }
