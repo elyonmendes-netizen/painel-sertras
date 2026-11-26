@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Coletor de Pendências Sertras
 // @namespace    painel-sertras
-// @version      2.0
+// @version      2.1
 // @description  Uma vez por dia lê as pendências de todos os contratos do Sertras e envia para o Painel de Pendências.
 // @match        https://gestaodeterceiros.sertras.com/escolha-um-contrato*
 // @grant        GM_xmlhttpRequest
@@ -81,7 +81,30 @@
     const el = document.querySelector('[x-data]');
     const d = W.Alpine && el ? W.Alpine.$data(el) : null;
     const itens = (d && (d.items || d.contratos)) || [];
-    return itens.map((o) => ({ id: String(o.ContratoTerceiroID), num: o.con_ter_num, emp: o.emp_ter_raz_soc, ativo: o.statusContrato != 0 }));
+    return itens.map((o) => ({ id: String(o.ContratoTerceiroID), num: o.con_ter_num, emp: o.emp_ter_raz_soc, cnpj: String(o.emp_ter_cnpj || '').replace(/\D/g, ''), ativo: o.statusContrato != 0 }));
+  }
+
+  // Descobre em qual contrato a sessão está agora (para voltar a ele no final)
+  async function contratoAtivo(BASE, lista) {
+    try {
+      const html = await (await fetch(BASE + 'dashboard/', { credentials: 'include' })).text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const rotulo = doc.querySelector('.gt-contract-label');
+      if (!rotulo) return null;
+      const partes = rotulo.textContent.split('|').map((x) => x.trim());
+      const num = partes[0];
+      const cnpj = (partes[1] || '').replace(/\D/g, '');
+      const candidatos = lista.filter((c) => c.num === num);
+      return candidatos.length === 1 ? candidatos[0] : candidatos.find((c) => (c.cnpj || '') === cnpj) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function trocarPara(BASE, c) {
+    const fd = new URLSearchParams();
+    fd.set('ContratoTerceiroId', c.id);
+    return (await (await fetch(BASE + 'ajax/ajx_PerfilMudaContrato.php', { method: 'POST', body: fd, credentials: 'include' })).text()).trim();
   }
 
   let rodando = false;
@@ -89,11 +112,15 @@
     if (rodando) return;
     rodando = true;
     botao.disabled = true;
+    let original = null;
+    let restaurado = false;
+    const BASE = W.BASEURL || location.origin + '/';
     try {
       if (!pegarToken(false)) throw new Error('sem token: clique em Coletar agora e cole o INGEST_TOKEN');
-      const BASE = W.BASEURL || location.origin + '/';
-      const lista = listaDeContratos().filter((c) => c.ativo);
+      const todosContratos = listaDeContratos();
+      const lista = todosContratos.filter((c) => c.ativo);
       if (!lista.length) throw new Error('não achei a lista de contratos (você está logado?)');
+      original = await contratoAtivo(BASE, todosContratos);
 
       const itens = [];
       const erros = [];
@@ -101,9 +128,7 @@
       for (let n = 0; n < lista.length; n++) {
         const c = lista[n];
         mostra(`Lendo ${n + 1} de ${lista.length}: ${c.num}<br><span style="color:#FDE68A">Não use o Sertras em outra aba até terminar.</span>`, 'rodando');
-        const fd = new URLSearchParams();
-        fd.set('ContratoTerceiroId', c.id);
-        const resp = (await (await fetch(BASE + 'ajax/ajx_PerfilMudaContrato.php', { method: 'POST', body: fd, credentials: 'include' })).text()).trim();
+        const resp = await trocarPara(BASE, c);
         if (resp.split('|')[0] !== 'OK') { erros.push(`${c.num}: não abriu (${resp.split('|')[0]})`); continue; }
 
         // Os 4 relatórios do contrato são lidos ao mesmo tempo (a troca de contrato continua em sequência)
@@ -154,11 +179,22 @@
         if (!falhou) lidos.push(c.id); // só marca como lido se os 4 relatórios vieram
       }
 
+      // Volta para o contrato em que a pessoa estava antes da coleta
+      let voltou = '';
+      if (original) {
+        const v = await trocarPara(BASE, original);
+        restaurado = v.split('|')[0] === 'OK';
+        voltou = v.split('|')[0] === 'OK' ? `Voltei para o contrato em que você estava: <b>${original.num}</b>.` : 'Não consegui voltar ao contrato anterior: escolha o contrato antes de enviar documentos.';
+      } else {
+        voltou = 'Agora escolha o contrato em que vai trabalhar.';
+      }
+
       mostra('Enviando para o painel…', 'rodando');
       const r = await enviar({ itens, erros, contratosLidos: lidos });
       GM_setValue('ultimaColeta', hoje());
-      mostra(`Coleta de hoje concluída: ${r.itens} itens na lista, ${r.aprovados} aprovados.${erros.length ? '<br>Avisos: ' + erros.length : ''}<br>Agora escolha o contrato em que vai trabalhar.`, 'ok');
+      mostra(`Coleta de hoje concluída: ${r.itens} itens na lista, ${r.aprovados} aprovados.${erros.length ? '<br>Avisos: ' + erros.length : ''}<br>${voltou}`, 'ok');
     } catch (e) {
+      if (original && !restaurado) { try { await trocarPara(BASE, original); } catch (e2) {} }
       mostra('Erro na coleta: ' + e.message, 'erro');
     } finally {
       rodando = false;
