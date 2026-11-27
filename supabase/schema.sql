@@ -33,6 +33,10 @@ create table if not exists public.itens (
   sla          text,
   primeira_vez timestamptz not null default now()  -- desde quando está em aberto
 );
+-- Comentário do analista (itens Pendente Correção) — coletor 2.2 em diante
+alter table public.itens add column if not exists comentario      text;
+alter table public.itens add column if not exists comentario_por  text;
+alter table public.itens add column if not exists comentario_data text;
 create index if not exists itens_leitura_idx on public.itens(leitura_id);
 create index if not exists itens_contrato_idx on public.itens(leitura_id, contrato_id);
 
