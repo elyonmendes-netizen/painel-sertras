@@ -17,9 +17,9 @@ export async function GET(request) {
     const s = v == null ? '' : String(v);
     return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
-  const cab = ['Contrato', 'Empresa', 'Colaborador', 'Função', 'Documento', 'Competência', 'Relatório', 'Status Sertras', 'Situação no painel', 'Detalhe'];
+  const cab = ['Contrato', 'Empresa', 'Colaborador', 'Função', 'Documento', 'Competência', 'Relatório', 'Status Sertras', 'Situação no painel', 'Detalhe', 'Comentário do analista', 'Analista', 'Data do comentário'];
   const corpo = linhas.map((l) =>
-    [l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia, l.relatorio, l.status, SITUACOES[l.situacao].rotulo, l.detalhe].map(esc).join(';')
+    [l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia, l.relatorio, l.status, SITUACOES[l.situacao].rotulo, l.detalhe, l.comentario, l.comentario_por, l.comentario_data].map(esc).join(';')
   );
   const csv = '﻿' + [cab.join(';'), ...corpo].join('\r\n');
   const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
