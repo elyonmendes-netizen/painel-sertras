@@ -16,7 +16,8 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
-const txt = (v) => (v == null ? null : String(v).slice(0, 500));
+const txt = (v, max = 500) => (v == null || v === '' ? null : String(v).slice(0, max));
+const COMENTARIO = ['comentario', 'comentario_por', 'comentario_data'];
 
 export async function POST(request) {
   const token = request.headers.get('x-ingest-token');
@@ -77,6 +78,13 @@ export async function POST(request) {
       status: txt(i.status) || 'Pendente',
       sla: txt(i.sla),
       primeira_vez: velho ? velho.primeira_vez : agora,
+      // Comentário do analista (só itens Pendente Correção). Se não deu para ler agora,
+      // mantém o da leitura anterior quando o item continua no mesmo status.
+      ...(txt(i.comentario, 4000)
+        ? { comentario: txt(i.comentario, 4000), comentario_por: txt(i.comentario_por, 200), comentario_data: txt(i.comentario_data, 40) }
+        : velho && velho.comentario && velho.status === (txt(i.status) || 'Pendente')
+          ? { comentario: velho.comentario, comentario_por: velho.comentario_por ?? null, comentario_data: velho.comentario_data ?? null }
+          : { comentario: null, comentario_por: null, comentario_data: null }),
     };
   });
 
@@ -123,9 +131,18 @@ export async function POST(request) {
     .single();
   if (e1) return NextResponse.json({ ok: false, erro: e1.message }, { status: 500, headers: CORS });
 
+  // Se o banco ainda não tem as colunas de comentário (SQL não rodado), grava sem elas
+  let semColunaComentario = false;
+  const coluna = (e) => /comentario/i.test(e?.message || '') || e?.code === 'PGRST204' || e?.code === '42703';
+  const tirar = (i) => { const c = { ...i }; for (const k of COMENTARIO) delete c[k]; return c; };
   for (let de = 0; de < itens.length; de += 500) {
-    const lote = itens.slice(de, de + 500).map((i) => ({ ...i, leitura_id: leitura.id }));
-    const { error } = await db.from('itens').insert(lote);
+    let lote = itens.slice(de, de + 500).map((i) => ({ ...(semColunaComentario ? tirar(i) : i), leitura_id: leitura.id }));
+    let { error } = await db.from('itens').insert(lote);
+    if (error && !semColunaComentario && coluna(error)) {
+      semColunaComentario = true;
+      lote = lote.map(tirar);
+      ({ error } = await db.from('itens').insert(lote));
+    }
     if (error) {
       await db.from('leituras').delete().eq('id', leitura.id);
       return NextResponse.json({ ok: false, erro: error.message }, { status: 500, headers: CORS });
@@ -142,7 +159,11 @@ export async function POST(request) {
   if (velhas?.length) await db.from('itens').delete().in('leitura_id', velhas.map((v) => v.id));
 
   return NextResponse.json(
-    { ok: true, leitura: leitura.id, itens: itens.length, aprovados: aprovados.length },
+    {
+      ok: true, leitura: leitura.id, itens: itens.length, aprovados: aprovados.length,
+      comentarios: semColunaComentario ? 0 : itens.filter((i) => i.comentario).length,
+      aviso: semColunaComentario ? 'banco sem as colunas de comentário: rode o SQL novo no Supabase' : undefined,
+    },
     { headers: CORS }
   );
 }
