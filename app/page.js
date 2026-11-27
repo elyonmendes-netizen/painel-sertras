@@ -26,10 +26,5 @@ export default async function Painel({ searchParams }) {
     );
   }
 
-  return (
-    <>
-      <Topo email={user?.email} atualizadoEm={bruto.atual.criado_em} temErros={bruto.atual.erros.length > 0} />
-      <PainelCliente bruto={bruto} grupoInicial={grupo} />
-    </>
-  );
+  return <PainelCliente bruto={bruto} grupoInicial={grupo} email={user?.email} />;
 }

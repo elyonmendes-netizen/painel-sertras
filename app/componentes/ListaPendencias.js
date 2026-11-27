@@ -69,7 +69,7 @@ export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
   return (
     <section className="cartao">
       <div className="cab-secao" style={{ alignItems: 'center' }}>
-        <h2>Lista ({filtradas.length})</h2>
+        <h2>Lista <span style={{ color: '#94A3B8', fontWeight: 600 }}>{filtradas.length}</span></h2>
         <div className="filtros">
           <label className="campo">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
@@ -122,23 +122,23 @@ export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
                   {mostrarEmpresa && (
                     <td>
                       <b>{l.contrato}</b>
-                      <div className="cinza" style={{ fontSize: 12 }}>{l.empresa}</div>
+                      <div className="sub-linha">{l.empresa}</div>
                     </td>
                   )}
                   <td>
                     {l.pessoa || '—'}
-                    {l.funcao && <div className="cinza" style={{ fontSize: 12 }}>{l.funcao}</div>}
+                    {l.funcao && <div className="sub-linha">{l.funcao}</div>}
                   </td>
-                  <td>
+                  <td style={{ fontWeight: 600 }}>
                     {l.documento}
                     {l.comentario && <Comentario l={l} />}
                   </td>
                   <td>{l.competencia || '—'}</td>
                   <td className="cinza">{l.relatorio}</td>
                   <td>
-                    <span className="etq" style={{ background: s.fundo, color: s.texto }}>{l.status}</span>
+                    <span className="etq" style={{ background: s.fundo, color: s.texto }}><i style={{ background: s.cor }} />{l.status}</span>
                   </td>
-                  <td className="cinza" style={{ fontSize: 13 }}>{l.detalhe}</td>
+                  <td className="cinza" style={{ fontSize: 12.5 }}>{l.detalhe}</td>
                 </tr>
               );
             })}
@@ -152,7 +152,7 @@ export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
       </div>
       {filtradas.length > limite && (
         <p style={{ textAlign: 'center' }}>
-          <button className="botao" onClick={() => setLimite(limite + 200)}>Mostrar mais ({filtradas.length - limite} restantes)</button>
+          <button className="botao claro" onClick={() => setLimite(limite + 200)}>Mostrar mais ({filtradas.length - limite} restantes)</button>
         </p>
       )}
     </section>

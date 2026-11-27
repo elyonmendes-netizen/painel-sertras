@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { carregarPainel } from '@/lib/dados';
 import { supabaseUsuario } from '@/lib/supabase-server';
-import { SITUACOES } from '@/lib/status';
+import { SITUACOES, sigla } from '@/lib/status';
 import Topo from '@/app/componentes/Topo';
 import ListaPendencias from '@/app/componentes/ListaPendencias';
 
@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic';
 function Selo({ k, n, rotulo }) {
   const s = SITUACOES[k];
   return (
-    <div style={{ background: s.fundo, color: s.texto, borderRadius: 10, padding: '10px 16px', fontSize: 13 }}>
-      {rotulo || s.rotulo} <b style={{ fontSize: 18, marginLeft: 6 }}>{n}</b>
+    <div className="selo" style={{ background: s.fundo, color: s.texto }}>
+      {rotulo || s.rotulo} <b style={{ color: s.numero }}>{n}</b>
     </div>
   );
 }
@@ -42,7 +42,7 @@ export default async function Empresa({ params }) {
     <>
       <Topo email={user?.email} atualizadoEm={d.atual?.criado_em} />
       <main className="conteudo">
-        <Link href={emp ? `/?contrato=${encodeURIComponent(emp.grupo)}` : '/'} style={{ fontSize: 14, textDecoration: 'none' }}>← Voltar</Link>
+        <Link href={emp ? `/?contrato=${encodeURIComponent(emp.grupo)}` : '/'} className="voltar">← Voltar ao painel</Link>
         {!emp ? (
           <section className="cartao">
             <h1 className="titulo" style={{ fontSize: 24 }}>Nenhuma pendência para esta empresa</h1>
@@ -51,11 +51,14 @@ export default async function Empresa({ params }) {
         ) : (
           <>
             <div className="linha-titulo">
-              <div>
-                <div className="kpi-rot">{emp.grupo}</div>
-                <h1 className="titulo" style={{ fontSize: 28, marginTop: 4 }}>{emp.contrato} · {emp.empresa}</h1>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                <span className="sigla" style={{ width: 52, height: 52, fontSize: 16, borderRadius: 14 }}>{sigla(emp.empresa)}</span>
+                <div>
+                  <div className="data-hoje">{emp.contrato}</div>
+                  <h1 className="titulo" style={{ fontSize: 26, marginTop: 2 }}>{emp.empresa}</h1>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div className="selos">
                 <Selo k="pendente" n={emp.pendente} />
                 <Selo k="analise" n={emp.analise} />
                 <Selo k="correcao" n={emp.correcao} />
@@ -63,12 +66,12 @@ export default async function Empresa({ params }) {
               </div>
             </div>
 
-            <div className="duas-col">
+            <div className="linha">
               <section className="cartao col-larga">
-                <h2 style={{ fontSize: 16, marginBottom: 12 }}>Por colaborador ({listaPessoas.length})</h2>
+                <h2 style={{ marginBottom: 8 }}>Por colaborador <span style={{ color: '#94A3B8', fontWeight: 600 }}>{listaPessoas.length}</span></h2>
                 {listaPessoas.length === 0 && <p className="cinza">Nenhum documento de pessoa nesta leitura.</p>}
                 {listaPessoas.map((p) => (
-                  <div key={p.nome} style={{ borderTop: '1px solid #F3F4F6', padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div key={p.nome} className="pessoa">
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 14, flexWrap: 'wrap' }}>
                       <span><b>{p.nome}</b> {p.funcao && <span className="cinza">· {p.funcao}</span>}</span>
                       <span className="cinza">{p.aberto} na lista</span>
@@ -78,6 +81,7 @@ export default async function Empresa({ params }) {
                         const s = SITUACOES[x.situacao];
                         return (
                           <span key={x.id} className="etq" style={{ background: s.fundo, color: s.texto }} title={x.status + ' · ' + x.detalhe}>
+                            <i style={{ background: s.cor }} />
                             {x.documento}{x.competencia && x.competencia !== '--' ? ` ${x.competencia}` : ''}
                           </span>
                         );
@@ -88,14 +92,14 @@ export default async function Empresa({ params }) {
               </section>
               <div className="col-estreita">
                 <section className="cartao">
-                  <h2 style={{ fontSize: 16, marginBottom: 12 }}>Documentos da empresa</h2>
+                  <h2 style={{ marginBottom: 8 }}>Documentos da empresa</h2>
                   {docsEmpresa.length === 0 && <p className="cinza">Nada pendente.</p>}
                   {docsEmpresa.map((x) => {
                     const s = SITUACOES[x.situacao];
                     return (
                       <div className="lin-simples" key={x.id}>
                         <span>{x.documento}{x.competencia && x.competencia !== '--' ? ` · ${x.competencia}` : ''}</span>
-                        <span className="etq" style={{ background: s.fundo, color: s.texto }}>{s.rotulo}</span>
+                        <span className="etq" style={{ background: s.fundo, color: s.texto }}><i style={{ background: s.cor }} />{s.rotulo}</span>
                       </div>
                     );
                   })}
