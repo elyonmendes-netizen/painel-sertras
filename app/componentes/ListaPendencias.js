@@ -8,8 +8,8 @@ function baixarExcel(linhas) {
     const t = v == null ? '' : String(v);
     return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
   };
-  const cab = ['Contrato', 'Empresa', 'Colaborador', 'Função', 'Documento', 'Competência', 'Relatório', 'Status Sertras', 'Situação'];
-  const corpo = linhas.map((l) => [l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia, l.relatorio, l.status, l.detalhe].map(esc).join(';'));
+  const cab = ['Contrato', 'Empresa', 'Colaborador', 'Função', 'Documento', 'Competência', 'Relatório', 'Status Sertras', 'Situação', 'Comentário do analista', 'Analista', 'Data do comentário'];
+  const corpo = linhas.map((l) => [l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia, l.relatorio, l.status, l.detalhe, l.comentario, l.comentario_por, l.comentario_data].map(esc).join(';'));
   const blob = new Blob(['\uFEFF' + [cab.join(';'), ...corpo].join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
   const a = document.createElement('a');
@@ -18,6 +18,25 @@ function baixarExcel(linhas) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+// Comentário do analista (Pendente Correção): mostra o começo e abre o resto ao clicar
+function Comentario({ l }) {
+  const quem = [l.comentario_por, l.comentario_data].filter(Boolean).join(' · ');
+  const longo = l.comentario.length > 180;
+  return (
+    <div className="comentario-analista">
+      <div className="comentario-quem">Comentário do analista{quem ? ` (${quem})` : ''}</div>
+      {longo ? (
+        <details>
+          <summary>{l.comentario.slice(0, 160).trim()}… <span className="ver-mais">ver tudo</span></summary>
+          <div className="comentario-texto">{l.comentario}</div>
+        </details>
+      ) : (
+        <div className="comentario-texto">{l.comentario}</div>
+      )}
+    </div>
+  );
 }
 
 export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
@@ -42,7 +61,7 @@ export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
       if (empresaValida && String(l.contrato_id) !== empresaValida) return false;
       if (situacao !== 'todos' && l.situacao !== situacao) return false;
       if (relatorio && l.relatorio !== relatorio) return false;
-      if (b && ![l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia].some((x) => (x || '').toLowerCase().includes(b))) return false;
+      if (b && ![l.contrato, l.empresa, l.pessoa, l.funcao, l.documento, l.competencia, l.comentario].some((x) => (x || '').toLowerCase().includes(b))) return false;
       return true;
     });
   }, [linhas, busca, empresaValida, situacao, relatorio]);
@@ -54,7 +73,7 @@ export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
         <div className="filtros">
           <label className="campo">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome, documento ou SUB" aria-label="Buscar" />
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome, documento, SUB ou comentário" aria-label="Buscar" />
           </label>
           {mostrarEmpresa && (
             <select className="campo" value={empresaValida} onChange={(e) => { setEmpresa(e.target.value); setLimite(100); }} aria-label="Empresa" style={{ maxWidth: 320 }}>
@@ -110,7 +129,10 @@ export default function ListaPendencias({ linhas, mostrarEmpresa = true }) {
                     {l.pessoa || '—'}
                     {l.funcao && <div className="cinza" style={{ fontSize: 12 }}>{l.funcao}</div>}
                   </td>
-                  <td>{l.documento}</td>
+                  <td>
+                    {l.documento}
+                    {l.comentario && <Comentario l={l} />}
+                  </td>
                   <td>{l.competencia || '—'}</td>
                   <td className="cinza">{l.relatorio}</td>
                   <td>
