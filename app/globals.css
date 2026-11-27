@@ -86,3 +86,12 @@ td { padding: 11px 8px; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
 .login-form button:disabled { opacity: .6; cursor: wait; }
 .erro { background: #FEE2E2; color: #991B1B; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
 .ok { background: #D1FAE5; color: #065F46; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+
+/* Comentário do analista (Pendente Correção) */
+.comentario-analista { margin-top: 6px; padding: 6px 8px; border-left: 3px solid #1D4ED8; background: #EFF6FF; border-radius: 4px; font-size: 12px; color: #1E3A8A; max-width: 460px; }
+.comentario-quem { font-weight: 600; margin-bottom: 2px; }
+.comentario-texto { white-space: pre-line; }
+.comentario-analista summary { cursor: pointer; list-style: none; }
+.comentario-analista summary::-webkit-details-marker { display: none; }
+.comentario-analista details[open] summary { display: none; }
+.ver-mais { text-decoration: underline; font-weight: 600; }
