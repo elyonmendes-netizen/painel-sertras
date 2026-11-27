@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Coletor de Pendências Sertras
 // @namespace    painel-sertras
-// @version      2.1
-// @description  Uma vez por dia lê as pendências de todos os contratos do Sertras e envia para o Painel de Pendências.
+// @version      2.2
+// @description  Uma vez por dia lê as pendências (e os comentários do analista nos itens Pendente Correção) de todos os contratos do Sertras e envia para o Painel de Pendências.
 // @match        https://gestaodeterceiros.sertras.com/escolha-um-contrato*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
@@ -107,6 +107,34 @@
     return (await (await fetch(BASE + 'ajax/ajx_PerfilMudaContrato.php', { method: 'POST', body: fd, credentials: 'include' })).text()).trim();
   }
 
+  // Status 5 (Pendente Correção). O 6 (Pendente Sertras Correção) já foi reenviado e está em análise.
+  const ehCorrecao = (st) => /corre/i.test(st || '') && !/sertras/i.test(st || '');
+
+  // Roda as tarefas com no máximo "n" ao mesmo tempo (para não sobrecarregar o Sertras)
+  async function emParalelo(lista, n, tarefa) {
+    let prox = 0;
+    await Promise.all(Array.from({ length: Math.min(n, lista.length) }, async () => {
+      while (prox < lista.length) await tarefa(lista[prox++]);
+    }));
+  }
+
+  // Página "Ver histórico": linha do tempo (#divTimeline li.event); o comentário fica no <blockquote>
+  async function lerComentario(endereco) {
+    const html = await (await fetch(endereco, { credentials: 'include' })).text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const eventos = [...doc.querySelectorAll('#divTimeline li.event')].filter((li) => li.querySelector('blockquote'));
+    if (!eventos.length) return {};
+    const ev = [...eventos].reverse().find((li) => ehCorrecao(li.querySelector('h3')?.textContent)) || eventos[eventos.length - 1];
+    const cab = ev.querySelector('p');
+    const spans = cab ? [...cab.querySelectorAll('span')] : [];
+    return {
+      comentario: (ev.querySelector('blockquote').innerText || ev.querySelector('blockquote').textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim(),
+      comentario_data: spans[0]?.textContent.trim() || null,
+      comentario_por: spans[1]?.textContent.trim() || (/sistema/i.test(cab?.textContent || '') ? 'Sistema' : null),
+    };
+  }
+
+  let semComentario = 0;
   let rodando = false;
   async function coletar() {
     if (rodando) return;
@@ -114,6 +142,7 @@
     botao.disabled = true;
     let original = null;
     let restaurado = false;
+    semComentario = 0;
     const BASE = W.BASEURL || location.origin + '/';
     try {
       if (!pegarToken(false)) throw new Error('sem token: clique em Coletar agora e cole o INGEST_TOKEN');
@@ -154,6 +183,7 @@
               contrato_id: c.id, contrato: c.num, empresa: c.emp, relatorio: nome,
               pessoa: v('Nome'), funcao: v('Função'), evento: v('Evento'), documento: v('Documento'),
               competencia: v('Competência'), data_envio: v('Data Envio'), status: v('Status'), sla: v('Prazo SLA'),
+              _hist: tr.querySelector('a[href*="historico-documentacao"]')?.getAttribute('href') || null,
             });
           }
           return out;
@@ -175,6 +205,13 @@
           if (r.erro) { erros.push(`${c.num}: ${r.nome} não carregou`); falhou = true; }
           else doContrato.push(...r.linhas);
         }
+        // Pendente Correção: abre o histórico de cada documento e pega o último comentário do analista
+        const emCorrecao = doContrato.filter((i) => i._hist && ehCorrecao(i.status));
+        if (emCorrecao.length) mostra(`Lendo ${n + 1} de ${lista.length}: ${c.num}<br>Comentários do analista (${emCorrecao.length})…<br><span style="color:#FDE68A">Não use o Sertras em outra aba até terminar.</span>`, 'rodando');
+        await emParalelo(emCorrecao, 5, async (i) => {
+          try { Object.assign(i, await lerComentario(i._hist)); } catch (e) { semComentario++; }
+        });
+        for (const i of doContrato) delete i._hist;
         itens.push(...doContrato);
         if (!falhou) lidos.push(c.id); // só marca como lido se os 4 relatórios vieram
       }
@@ -190,9 +227,10 @@
       }
 
       mostra('Enviando para o painel…', 'rodando');
+      if (semComentario) erros.push(`${semComentario} comentário(s) do analista não carregaram`);
       const r = await enviar({ itens, erros, contratosLidos: lidos });
       GM_setValue('ultimaColeta', hoje());
-      mostra(`Coleta de hoje concluída: ${r.itens} itens na lista, ${r.aprovados} aprovados.${erros.length ? '<br>Avisos: ' + erros.length : ''}<br>${voltou}`, 'ok');
+      mostra(`Coleta de hoje concluída: ${r.itens} itens na lista, ${r.aprovados} aprovados, ${r.comentarios ?? 0} comentários do analista.${erros.length ? '<br>Avisos: ' + erros.length : ''}<br>${voltou}`, 'ok');
     } catch (e) {
       if (original && !restaurado) { try { await trocarPara(BASE, original); } catch (e2) {} }
       mostra('Erro na coleta: ' + e.message, 'erro');
